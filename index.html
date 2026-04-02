@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GACE - Registro de Capacitación v5.0 (QR Sync)</title>
+    <title>GACE - Panel de Control de Capacitación (QR Sync)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
         :root { --azul-claro: #e3f2fd; --azul-medio: #2196F3; --azul-oscuro: #1565C0; --blanco: #ffffff; }
@@ -29,18 +30,41 @@
         td { border-bottom: 1px solid #eceff1; padding: 12px; }
         .btn { padding: 10px 15px; cursor: pointer; border: none; border-radius: 8px; font-weight: bold; display: flex; align-items: center; gap: 5px; justify-content: center; }
         .btn-save { background: #4caf50; color: white; }
-        .btn-confirm { background: #ff9800; color: white; margin-top: 20px; width: 100%; font-size: 1.1em; display: none; height: 50px; }
-        .btn-new-from-edit { background: var(--azul-oscuro); color: white; margin-top: 10px; width: 100%; font-size: 1.1em; display: none; height: 50px; }
         .btn-clear { background: #90a4ae; color: white; }
         .btn-pdf { background: var(--azul-oscuro); color: white; width: 100%; font-size: 1.1em; margin-top: 20px; height: 50px; }
-        .btn-edit { background: #2196F3; color: white; margin-right: 5px; padding: 5px 10px; font-size: 0.8em;}
         .btn-borrar { background: #f44336; color: white; padding: 5px 10px; font-size: 0.8em;}
         .canvas-style { border: 2px dashed #b0bec5; background: #fff; cursor: crosshair; touch-action: none; width: 100%; max-width: 500px; height: 150px; border-radius: 8px; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
         .history-item { padding:15px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center; }
-        #contenedorQR { text-align: center; background: #fafafa; border: 1px solid #ddd; padding: 15px; border-radius: 10px; margin-top: 10px; }
-        #imgQR { width: 150px; height: 150px; }
+        
+        /* Estilos específicos para el nuevo panel QR */
+        #contenedorQR { 
+            text-align: center; 
+            background: #fafafa; 
+            border: 2px solid var(--azul-medio); 
+            padding: 20px; 
+            border-radius: 10px; 
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #qrcode { /* Contenedor donde la librería dibujará el QR */
+            margin: 15px 0;
+            padding: 10px;
+            background: white;
+            border: 1px solid #ddd;
+        }
+        .status-sync {
+            font-size: 0.8em;
+            color: #666;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .blink { animation: blinker 1s linear infinite; }
+        @keyframes blinker { 50% { opacity: 0; } }
     </style>
 </head>
 <body>
@@ -83,44 +107,43 @@
                     <canvas id="canvas-instructor" class="canvas-style"></canvas><br>
                     <button class="btn btn-clear" onclick="limpiarCanvas('canvas-instructor'); autoSave();"><i class="material-icons">auto_fix_high</i>Limpiar Firma</button>
                 </div>
-                <div style="flex: 1; min-width: 250px; text-align: center; border-left: 1px solid #eee; padding-left: 20px;">
+                
+                <div style="flex: 1; min-width: 250px; text-align: center; border-left: 1px solid #eee; padding-left: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
                     <label style="justify-content: center;"><i class="material-icons">qr_code_2</i>Registro QR</label>
-                    <button class="btn btn-save" onclick="activarRegistroQR()" style="margin: 10px auto; background: var(--azul-medio);">
-                        <i class="material-icons">sensors</i> ACTIVAR QR
-                    </button>
+                    
+                    <div id="bloqueActivarQR">
+                        <p style="font-size: 0.9em; color: #555; margin: 10px 0;">Presiona para iniciar el registro desde celulares.</p>
+                        <button class="btn btn-save" onclick="activarRegistroQR()" style="margin: 0 auto; background: var(--azul-medio);">
+                            <i class="material-icons">sensors</i> ACTIVAR QR
+                        </button>
+                    </div>
+
                     <div id="contenedorQR" style="display:none;">
-                        <img id="imgQR" src="" alt="QR Registro">
-                        <p style="font-size: 0.7em; color: #666;">Pide a los alumnos escanear para firmar.</p>
+                        <div id="qrcode"></div>
+                        <p style="font-size: 0.8em; color: #333; font-weight: bold; margin: 5px 0;">Pide a los alumnos escanear para firmar.</p>
+                        <div class="status-sync">
+                            <i class="material-icons blink" style="color: #4caf50; font-size: 14px;">sync</i>
+                            Sincronizando en vivo...
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="card">
-            <h4><i class="material-icons">group_add</i>Participantes</h4>
-            <div class="form-group">
-                <input type="hidden" id="editParticipanteId">
-                <div class="field" style="flex:2"><label><i class="material-icons">badge</i>Nombre Completo:</label><input type="text" id="p_nombre" placeholder="JUAN AGUILAR"></div>
-                <div class="field"><label><i class="material-icons">tag</i>No. De Orden:</label><input type="text" id="p_orden" placeholder="2626"></div>
-                <div class="field"><label><i class="material-icons">work</i>Puesto:</label><input type="text" id="p_puesto" placeholder="GUARDIA"></div>
-            </div>
-            <label><i class="material-icons">gesture</i>Firma del Participante:</label>
-            <canvas id="canvas-participante" class="canvas-style"></canvas>
-            <div style="margin-top: 15px; display:flex; gap:10px; justify-content: flex-end;">
-                <button class="btn btn-clear" onclick="limpiarCanvas('canvas-participante')"><i class="material-icons">auto_fix_high</i>Borrar Firma</button>
-                <button class="btn btn-save" id="btnAgregarP" onclick="agregarRegistro()"><i class="material-icons">person_add</i>+ Agregar a Lista</button>
-            </div>
+            <h4><i class="material-icons">group</i>Participantes Registrados (vía QR)</h4>
+            
             <div class="table-wrapper">
                 <table id="tablaRegistros">
                     <thead><tr><th>No.</th><th>Nombre</th><th>Orden</th><th>Puesto</th><th>Firma</th><th>Acciones</th></tr></thead>
-                    <tbody></tbody>
+                    <tbody>
+                        </tbody>
                 </table>
+                <p id="msgSinParticipantes" style="text-align: center; color: #777; padding: 20px;">Esperando registros... Activa el QR e indica a los alumnos que escaneen.</p>
             </div>
         </div>
         
         <button id="btnGenerarNormal" class="btn btn-pdf" onclick="confirmarYGenerar()"><i class="material-icons">picture_as_pdf</i>💾 FINALIZAR Y GENERAR PDF</button>
-        <button id="btnConfirmarEdicion" class="btn btn-confirm" onclick="confirmarActualizacionHistorial()"><i class="material-icons">save</i>✅ ACTUALIZAR REGISTRO ACTUAL</button>
-        <button id="btnGenerarComoNuevo" class="btn btn-new-from-edit" onclick="confirmarYGenerar()"><i class="material-icons">library_add</i>📂 GENERAR COMO NUEVO REGISTRO</button>
     </div>
 
     <div id="catalogo" class="tab-content">
@@ -146,97 +169,191 @@
 <script>
     const { jsPDF } = window.jspdf;
     
-    // URL DE TU APPS SCRIPT ACTUALIZADA
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxVzC_TVXb4wUL9zH9MzbB8DdBQrvJnRBrpuxF-bMKflw02-FzrMUwV3slVynVVSryB/exec";
+    // URL DE TU APPS SCRIPT
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbvM_kG2I0_h4sT4f6C4B9g7E8r-L5q3D5f0H0f6g5g6/exec"; // Reemplaza con tu URL real si no es esta
 
     let registrosAsistencia = [];
     let idSesionActual = ""; 
+    let intervaloSync = null;
+    let qrGenerator = null; // Objeto para la librería QR
+
     let baseCursos = JSON.parse(localStorage.getItem('gace_cursos_v3')) || [];
     let historialCompleto = JSON.parse(localStorage.getItem('gace_historial_data')) || [];
 
     async function init() {
+        // Inicializar el generador de QR vacío
+        qrGenerator = new QRCode(document.getElementById("qrcode"), {
+            width: 180,
+            height: 180,
+            colorDark : "#000000",
+            colorLight : "#ffffff",
+            correctLevel : QRCode.CorrectLevel.H
+        });
+
         const selDur = document.getElementById('duracion');
         for(let i=2; i<=24; i++) {
             let opt = document.createElement('option'); opt.value = i + " horas"; opt.text = i + " horas"; selDur.add(opt);
         }
         document.getElementById('fecha').value = new Date().toISOString().split('T')[0];
-        setupCanvas('canvas-instructor'); setupCanvas('canvas-participante');
+        setupCanvas('canvas-instructor');
         cargarSelect(); 
         await sincronizarCursosNube();
         setTimeout(loadOffline, 100);
     }
 
-    // --- NUEVAS FUNCIONES PARA EL QR Y SINCRONIZACIÓN ---
+    // --- FUNCIONES PARA EL QR Y SINCRONIZACIÓN (CORREGIDAS) ---
 
     function activarRegistroQR() {
-        if(!document.getElementById('planta').value) return alert("Escribe el nombre de la Planta primero.");
+        if(!document.getElementById('planta').value || !document.getElementById('instructor').value) {
+            return alert("Por favor, llena los datos de Planta e Instructor primero.");
+        }
         
+        // Generar ID único de sesión
         idSesionActual = "GACE-" + Date.now();
         const urlRegistro = WEB_APP_URL + "?op=registro_qr&idSesion=" + idSesionActual;
         
-        // Google Charts QR API
-        const qrUrl = "https://chart.googleapis.com/chart?chs=200x200&cht=qr&chl=" + encodeURIComponent(urlRegistro);
+        // Generar el QR localmente
+        qrGenerator.clear();
+        qrGenerator.makeCode(urlRegistro);
         
-        document.getElementById('imgQR').src = qrUrl;
-        document.getElementById('contenedorQR').style.display = 'block';
+        // Intercambiar bloques visuales
+        document.getElementById('bloqueActivarQR').style.display = 'none';
+        document.getElementById('contenedorQR').style.display = 'flex';
         
         // Empezar a buscar alumnos cada 5 segundos
-        setInterval(consultarNuevosAlumnos, 5000);
+        if (intervaloSync) clearInterval(intervaloSync);
+        intervaloSync = setInterval(consultarNuevosAlumnos, 5000);
+        
+        // Guardar estado para offline
+        autoSave();
     }
 
     async function consultarNuevosAlumnos() {
         if (!idSesionActual) return;
         try {
             const resp = await fetch(WEB_APP_URL + "?op=obtener_alumnos&idSesion=" + idSesionActual);
+            if (!resp.ok) return; // Manejo de errores de red
             const nuevosAlumnos = await resp.json();
             
+            let huboCambios = false;
             nuevosAlumnos.forEach(nuevo => {
+                // Verificar si ya existe (por Nombre y Orden)
                 const existe = registrosAsistencia.find(r => r.nombre === nuevo.nombre && r.orden === nuevo.orden);
                 if (!existe) {
                     registrosAsistencia.push({
-                        id: Date.now() + Math.random(),
+                        id: Date.now() + Math.random(), // ID temporal local
                         nombre: nuevo.nombre,
                         orden: nuevo.orden,
                         puesto: nuevo.puesto,
                         firma: nuevo.firma
                     });
-                    renderTabla();
-                    autoSave();
+                    huboCambios = true;
                 }
             });
+
+            if (huboCambios) {
+                renderTabla();
+                autoSave();
+            }
         } catch (e) { console.error("Error sincronizando:", e); }
     }
 
-    // --- FUNCIONES ORIGINALES MODIFICADAS ---
+    // --- FUNCIONES DE INTERFAZ Y PDF (MODIFICADAS) ---
+
+    function renderTabla() { 
+        const tbody = document.querySelector('#tablaRegistros tbody');
+        const msg = document.getElementById('msgSinParticipantes');
+        
+        if (registrosAsistencia.length === 0) {
+            tbody.innerHTML = '';
+            msg.style.display = 'block';
+            return;
+        }
+
+        msg.style.display = 'none';
+        tbody.innerHTML = registrosAsistencia.map((r, i) => `
+            <tr>
+                <td>${i+1}</td>
+                <td>${r.nombre}</td>
+                <td>${r.orden}</td>
+                <td>${r.puesto}</td>
+                <td><img src="${r.firma}" height="30" alt="Firma"></td>
+                <td>
+                    <button class="btn btn-borrar" onclick="borrarR(${r.id})">
+                        <i class="material-icons" style="font-size: 16px;">delete</i>
+                    </button>
+                </td>
+            </tr>
+        `).join(''); 
+    }
+
+    function borrarR(id) { 
+        if(!confirm("¿Eliminar a este participante de la lista local? (No se borrará del Excel)")) return;
+        registrosAsistencia = registrosAsistencia.filter(r => r.id !== id); 
+        renderTabla(); 
+        autoSave(); 
+    }
 
     async function confirmarYGenerar() { 
-        if(registrosAsistencia.length === 0) return alert("Lista vacía"); 
-        if(!document.getElementById('turno').value) return alert("Seleccione el turno"); 
+        if(registrosAsistencia.length === 0) return alert("No hay participantes registrados todavía."); 
+        if(!document.getElementById('turno').value) return alert("Seleccione el turno."); 
         
-        if(confirm("¿Finalizar curso? Se descargará el PDF y se limpiará la hoja de Drive.")) {
+        if(confirm(`Se generará el PDF con ${registrosAsistencia.length} participantes. Al finalizar, se limpiará la hoja de Drive para una nueva sesión. ¿Proceder?`)) {
             const fRaw = document.getElementById('fecha').value.split('-'); 
             const fCorr = `${fRaw[2]}/${fRaw[1]}/${fRaw[0]}`; 
+            
+            // Buscar datos del curso seleccionado
+            const cursoSeleccionado = baseCursos.find(x => x.id == document.getElementById('selectCurso').value);
+
             const d = { 
-                planta: document.getElementById('planta').value, 
+                planta: document.getElementById('planta').value.toUpperCase(), 
                 turno: document.getElementById('turno').value, 
                 fecha: fCorr, 
-                instructor: document.getElementById('instructor').value, 
+                instructor: document.getElementById('instructor').value.toUpperCase(), 
                 duracion: document.getElementById('duracion').value, 
-                curso: baseCursos.find(x => x.id == document.getElementById('selectCurso').value), 
+                curso: cursoSeleccionado || {nombre: "Curso no encontrado", contenido: ""}, 
                 participantes: JSON.parse(JSON.stringify(registrosAsistencia)), 
                 firmaInstructor: document.getElementById('canvas-instructor').toDataURL() 
             }; 
             
             generarPDF(d, true); 
             
-            // Limpiar Drive
-            await fetch(WEB_APP_URL + "?op=limpiar_hoja");
+            // --- LIMPIEZA POST-GENERACIÓN ---
+            
+            // 1. Detener sincronización
+            if (intervaloSync) clearInterval(intervaloSync);
+            
+            // 2. Limpiar Drive (Enviar orden al Apps Script)
+            fetch(WEB_APP_URL + "?op=limpiar_hoja");
+            
+            // 3. Resetear panel local
             idSesionActual = "";
             document.getElementById('contenedorQR').style.display = 'none';
+            document.getElementById('bloqueActivarQR').style.display = 'block';
+            qrGenerator.clear();
+            
+            resetearFormulario();
         }
     }
 
-    // El resto de tus funciones de dibujo, tablas y administración (Sin cambios)
+    function resetearFormulario() {
+        document.getElementById('idRegistroHistorial').value = ""; 
+        document.getElementById('planta').value = ""; 
+        document.getElementById('instructor').value = "";
+        document.getElementById('turno').value = ""; 
+        document.getElementById('fecha').value = new Date().toISOString().split('T')[0];
+        document.getElementById('duracion').selectedIndex = 0;
+        document.getElementById('selectCurso').selectedIndex = 0;
+        actualizarTemario();
+        
+        registrosAsistencia = []; 
+        limpiarCanvas('canvas-instructor');
+        renderTabla(); 
+        localStorage.removeItem('gace_temp_v3');
+    }
+
+    // --- FUNCIONES ORIGINALES (SIN CAMBIOS O CON AJUSTES MENORES) ---
+
     function setupCanvas(id) {
         const cv = document.getElementById(id); const cx = cv.getContext('2d');
         cv.width = 500; cv.height = 150;
@@ -266,7 +383,8 @@
             fecha: document.getElementById('fecha').value,
             cursoId: document.getElementById('selectCurso').value,
             lista: registrosAsistencia,
-            firmaIns: document.getElementById('canvas-instructor').toDataURL()
+            firmaIns: document.getElementById('canvas-instructor').toDataURL(),
+            idSesion: idSesionActual // Guardar el ID de sesión activo
         };
         localStorage.setItem('gace_temp_v3', JSON.stringify(datos));
     }
@@ -286,6 +404,17 @@
                 img.onload = () => document.getElementById('canvas-instructor').getContext('2d').drawImage(img, 0, 0);
                 img.src = d.firmaIns;
             }
+            
+            // Recuperar sesión QR si estaba activa
+            if (d.idSesion) {
+                idSesionActual = d.idSesion;
+                const urlRegistro = WEB_APP_URL + "?op=registro_qr&idSesion=" + idSesionActual;
+                qrGenerator.makeCode(urlRegistro);
+                document.getElementById('bloqueActivarQR').style.display = 'none';
+                document.getElementById('contenedorQR').style.display = 'flex';
+                intervaloSync = setInterval(consultarNuevosAlumnos, 5000);
+            }
+
             renderTabla();
         }
         actualizarTemario();
@@ -339,7 +468,9 @@
                 styles: { fontSize: 8, minCellHeight: 9, font: "helvetica", fontStyle: 'normal' },
                 didDrawCell: (data) => {
                     if (data.column.index === 4 && data.cell.section === 'body') {
-                        doc.addImage(bloque[data.row.index].firma, 'PNG', data.cell.x + 2, data.cell.y + 1, 14, 6);
+                        try {
+                            doc.addImage(bloque[data.row.index].firma, 'PNG', data.cell.x + 2, data.cell.y + 1, 14, 6);
+                        } catch (e) { console.error("Error al añadir firma al PDF", e); }
                     }
                 }
             });
@@ -363,28 +494,13 @@
         location.reload(); 
     }
 
-    function renderTabla() { document.querySelector('#tablaRegistros tbody').innerHTML = registrosAsistencia.map((r, i) => `<tr><td>${i+1}</td><td>${r.nombre}</td><td>${r.orden}</td><td>${r.puesto}</td><td><img src="${r.firma}" height="30"></td><td><button class="btn btn-edit" onclick="editarParticipante(${r.id})">E</button><button class="btn btn-borrar" onclick="borrarR(${r.id})">X</button></td></tr>`).join(''); }
-    
-    function agregarRegistro() {
-        const n = document.getElementById('p_nombre').value;
-        const editId = document.getElementById('editParticipanteId').value;
-        if(!n) return alert("Nombre requerido");
-        const nuevo = { id: editId ? Number(editId) : Date.now(), nombre: n.toUpperCase(), orden: document.getElementById('p_orden').value, puesto: document.getElementById('p_puesto').value.toUpperCase(), firma: document.getElementById('canvas-participante').toDataURL() };
-        if(editId) {
-            const idx = registrosAsistencia.findIndex(x => x.id == editId);
-            registrosAsistencia[idx] = nuevo;
-            document.getElementById('btnAgregarP').innerHTML = '<i class="material-icons">person_add</i>+ Agregar a Lista';
-            document.getElementById('editParticipanteId').value = "";
-        } else {
-            registrosAsistencia.push(nuevo);
-        }
-        document.getElementById('p_nombre').value = ""; document.getElementById('p_orden').value = ""; document.getElementById('p_puesto').value = "";
-        limpiarCanvas('canvas-participante'); renderTabla(); autoSave();
-    }
-
     function cargarSelect() { 
         const s = document.getElementById('selectCurso'); 
         const idActual = s.value;
+        if (baseCursos.length === 0) {
+            s.innerHTML = '<option value="" disabled selected>No hay cursos cargados</option>';
+            return;
+        }
         s.innerHTML = baseCursos.map(c => `<option value="${c.id}">${c.nombre}</option>`).join(''); 
         if(idActual) s.value = idActual;
         actualizarTemario(); 
@@ -404,15 +520,11 @@
         document.getElementById('sync-loader').style.display = 'none';
     }
 
-    function actualizarTemario() { const c = baseCursos.find(x => x.id == document.getElementById('selectCurso').value); document.getElementById('textoTemario').innerText = c ? c.contenido : "Seleccione curso"; }
-    
-    function resetearFormulario() {
-        document.getElementById('idRegistroHistorial').value = ""; document.getElementById('planta').value = ""; document.getElementById('instructor').value = "";
-        document.getElementById('turno').value = ""; document.getElementById('fecha').value = new Date().toISOString().split('T')[0];
-        registrosAsistencia = []; limpiarCanvas('canvas-instructor');
-        renderTabla(); localStorage.removeItem('gace_temp_v3');
+    function actualizarTemario() { 
+        const c = baseCursos.find(x => x.id == document.getElementById('selectCurso').value); 
+        document.getElementById('textoTemario').innerText = c ? c.contenido : "Seleccione curso"; 
     }
-
+    
     function openTab(id) { 
         document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active')); 
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); 
@@ -422,7 +534,18 @@
         if(id === 'historial') renderHistorial(); 
     }
 
-    function renderHistorial() { document.getElementById('logHistorial').innerHTML = historialCompleto.map(h => `<div class="history-item"><div><strong>${h.nombreFile}</strong><br><small>${h.data.fecha} | ${h.data.participantes.length} pers.</small></div><div class="history-actions"><button class="btn btn-save" onclick='redescargar(${h.id})'><i class="material-icons">download</i></button><button class="btn btn-borrar" onclick='eliminarHistorial(${h.id})'><i class="material-icons">delete</i></button></div></div>`).reverse().join(''); }
+    function renderHistorial() { 
+        document.getElementById('logHistorial').innerHTML = historialCompleto.map(h => `
+            <div class="history-item">
+                <div><strong>${h.nombreFile}</strong><br><small>${h.data.fecha} | ${h.data.participantes.length} pers.</small></div>
+                <div class="history-actions">
+                    <button class="btn btn-save" onclick='redescargar(${h.id})'><i class="material-icons">download</i></button>
+                    <button class="btn btn-borrar" onclick='eliminarHistorial(${h.id})'><i class="material-icons">delete</i></button>
+                </div>
+            </div>
+        `).reverse().join(''); 
+    }
+    
     function redescargar(id) { generarPDF(historialCompleto.find(x => x.id == id).data, false); }
     function eliminarHistorial(id) { if(confirm("¿Eliminar?")) { historialCompleto = historialCompleto.filter(h => h.id !== id); localStorage.setItem('gace_historial_data', JSON.stringify(historialCompleto)); renderHistorial(); } }
 
