@@ -3,256 +3,457 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GACE - Registro de Capacitación</title>
+    <title>GACE - Registro de Capacitación v5.0</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
-        :root { --azul-gace: #1565C0; --amarillo-gace: #ffd700; --gris-suave: #f4f7f6; }
-        body { font-family: 'Segoe UI', Arial, sans-serif; background-color: var(--gris-suave); margin: 0; padding: 20px; color: #333; }
-        .container { max-width: 900px; margin: auto; }
-        .card { background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        h2 { color: var(--azul-gace); text-align: center; border-bottom: 2px solid var(--azul-gace); padding-bottom: 10px; }
-        .grid-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
-        label { font-weight: bold; display: block; margin-bottom: 5px; font-size: 0.9em; }
-        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
-        .temario-box { background: #fffde7; padding: 15px; border-left: 5px solid var(--amarillo-gace); margin: 15px 0; font-size: 0.95em; line-height: 1.4; }
-        canvas { border: 1px dashed #666; background: #fff; width: 100%; height: 120px; border-radius: 5px; cursor: crosshair; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
-        th { background-color: var(--amarillo-gace); color: black; padding: 12px; text-transform: uppercase; font-size: 0.85em; }
-        td { border: 1px solid #ddd; padding: 8px; text-align: center; }
-        .btn { padding: 12px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; }
-        .btn-pdf { background: #2e7d32; color: white; margin-top: 20px; font-size: 1.1em; }
-        .btn-pdf:hover { background: #1b5e20; }
-        .btn-qr { background: var(--azul-gace); color: white; }
-        .btn-clear { background: #d32f2f; color: white; width: auto; padding: 5px 10px; font-size: 0.8em; }
-        #qr-container { display: none; text-align: center; padding: 20px; border: 2px solid var(--azul-gace); border-radius: 10px; background: #e3f2fd; margin-bottom: 20px; }
+        :root { 
+            --azul-claro: #e3f2fd; 
+            --azul-medio: #2196F3; 
+            --azul-oscuro: #1565C0; 
+            --blanco: #ffffff; 
+            --gris-suave: #f0f4f8;
+        }
+        
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 15px; background-color: var(--gris-suave); color: #333; }
+        .container { max-width: 1000px; margin: auto; }
+        
+        /* Navegación */
+        .nav-tabs { display: flex; gap: 8px; margin-bottom: -1px; overflow-x: auto; }
+        .tab-btn { 
+            padding: 12px 20px; cursor: pointer; background: #cfd8dc; border: none; 
+            border-radius: 10px 10px 0 0; font-weight: bold; display: flex; 
+            align-items: center; gap: 6px; white-space: nowrap; transition: 0.3s;
+        }
+        .tab-btn.active { background: var(--blanco); color: var(--azul-oscuro); border-top: 4px solid var(--azul-medio); box-shadow: 0 -2px 10px rgba(0,0,0,0.05); }
+
+        /* Tarjetas */
+        .card { 
+            background: var(--blanco); padding: 25px; border-radius: 0 15px 15px 15px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; border: 1px solid #cfd8dc; 
+        }
+        h2 { color: var(--azul-oscuro); text-align: center; margin-bottom: 20px; font-size: 1.5rem; }
+        h4 { border-bottom: 2px solid var(--azul-claro); padding-bottom: 10px; color: var(--azul-medio); display: flex; align-items: center; gap: 10px; margin-top: 0; }
+        
+        /* Formularios */
+        .form-group { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 15px; }
+        .field { flex: 1; min-width: 180px; }
+        label { font-weight: 600; display: flex; align-items: center; gap: 6px; margin-bottom: 6px; font-size: 0.85em; color: #546e7a; }
+        input, select, textarea { width: 100%; padding: 12px; border: 1px solid #b0bec5; border-radius: 8px; box-sizing: border-box; font-size: 14px; }
+        
+        .temario-box { 
+            background: var(--azul-claro); padding: 15px; border-radius: 8px; 
+            border-left: 5px solid var(--azul-medio); margin: 15px 0; font-size: 0.9em;
+        }
+
+        /* Tabla */
+        .table-wrapper { width: 100%; overflow-x: auto; margin-top: 15px; border-radius: 8px; border: 1px solid #eee; }
+        table { width: 100%; border-collapse: collapse; min-width: 600px; }
+        th { background-color: #ffd700; padding: 12px; text-align: left; color: #000; font-size: 0.85em; }
+        td { border-bottom: 1px solid #eceff1; padding: 10px; font-size: 0.9em; }
+
+        /* Botones */
+        .btn { 
+            padding: 10px 15px; cursor: pointer; border: none; border-radius: 8px; 
+            font-weight: bold; display: flex; align-items: center; gap: 6px; 
+            justify-content: center; transition: 0.2s;
+        }
+        .btn:active { transform: scale(0.98); }
+        .btn-save { background: #4caf50; color: white; }
+        .btn-pdf { background: var(--azul-oscuro); color: white; width: 100%; font-size: 1.1em; height: 55px; margin-top: 10px; }
+        .btn-qr { background: #673ab7; color: white; }
+
+        /* Firma Canvas */
+        .canvas-style { 
+            border: 2px dashed #b0bec5; background: #fff; cursor: crosshair; 
+            touch-action: none; width: 100%; max-width: 500px; height: 130px; border-radius: 8px; 
+        }
+
+        /* Panel QR */
+        .qr-panel { 
+            border: 2px solid var(--azul-medio); background: #f1faff; 
+            padding: 20px; border-radius: 15px; margin-bottom: 20px; 
+            display: none; text-align: center; animation: fadeIn 0.4s;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        #sync-badge { font-size: 11px; background: #4caf50; color: white; padding: 3px 8px; border-radius: 12px; display: none; vertical-align: middle; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div class="card">
-        <h2>GRUPO ÁGUILAS - GACE</h2>
-        <p style="text-align:center; margin-top:-10px;">Registro de Capacitación de Personal</p>
+    <h2>GACE - CAPACITACIÓN <span id="sync-badge">NUBE ACTIVA</span></h2>
 
-        <div id="qr-container">
-            <span class="material-icons" style="font-size: 40px; color: var(--azul-gace);">qr_code_2</span>
-            <p><strong>PREREGISTRO ACTIVO</strong><br>Los participantes pueden escanear para firmar:</p>
-            <div id="qrcode"></div>
-            <button class="btn btn-clear" style="margin: 10px auto;" onclick="toggleQR()">CERRAR QR</button>
-        </div>
-
-        <div class="grid-form">
-            <div>
-                <label>Planta:</label>
-                <input type="text" id="planta" placeholder="Ej. Align 2" value="Align 2">
-            </div>
-            <div>
-                <label>Turno:</label>
-                <select id="turno">
-                    <option value="1er Turno">1er Turno</option>
-                    <option value="2do Turno">2do Turno</option>
-                    <option value="3er Turno">3er Turno</option>
-                </select>
-            </div>
-            <div>
-                <label>Fecha:</label>
-                <input type="date" id="fecha">
-            </div>
-        </div>
-
-        <div class="grid-form">
-            <div style="grid-column: span 2;">
-                <label>Curso:</label>
-                <input type="text" id="cursoNombre" value="Entrega y recepción de mensajería y paquetería">
-            </div>
-            <div>
-                <label>Duración:</label>
-                <input type="text" id="duracion" value="2 horas">
-            </div>
-        </div>
-
-        <div>
-            <label>Instructor:</label>
-            <input type="text" id="instructor" placeholder="Nombre completo">
-        </div>
-
-        <div class="temario-box">
-            <strong>Contenido:</strong><br>
-            <textarea id="contenido" rows="3" style="border:none; background:transparent; resize:none;">Criterios C-TPAT, ¿Qué es una paquetería?, ¿Cómo identificar una paquetería sospechosa?, ¿Qué hacer si recibes una correspondencia sospechosa? y recomendaciones al recibir paquetería.</textarea>
-        </div>
-
-        <label>Firma del Instructor:</label>
-        <canvas id="pad-instructor"></canvas>
-        <button class="btn btn-clear" onclick="limpiarCanvas()">Limpiar Firma</button>
+    <div class="nav-tabs">
+        <button class="tab-btn active" onclick="openTab('registro')"><i class="material-icons">edit_note</i>REGISTRO</button>
+        <button class="tab-btn" onclick="openTab('catalogo')"><i class="material-icons">library_books</i>CURSOS</button>
+        <button class="tab-btn" onclick="openTab('historial')"><i class="material-icons">history</i>HISTORIAL</button>
     </div>
 
-    <div class="card">
-        <h3>Lista de Asistencia (<span id="contador">0</span>)</h3>
-        <button class="btn btn-qr" onclick="toggleQR()">
-            <span class="material-icons">qr_code</span> MOSTRAR CÓDIGO QR PARA REGISTRO
-        </button>
+    <div id="registro" class="tab-content active">
+        <div class="card">
+            <h4><i class="material-icons">assignment</i>Datos de la Sesión</h4>
+            <div class="form-group">
+                <div class="field"><label><i class="material-icons">school</i>Curso:</label><select id="selectCurso" onchange="actualizarTemario();"></select></div>
+                <div class="field"><label><i class="material-icons">business</i>Planta:</label><input type="text" id="planta" placeholder="Ej. Bosch"></div>
+                <div class="field"><label><i class="material-icons">schedule</i>Turno:</label>
+                    <select id="turno">
+                        <option value="1er Turno">1er Turno</option>
+                        <option value="2do Turno">2do Turno</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="field"><label><i class="material-icons">person</i>Instructor:</label><input type="text" id="instructor" placeholder="Nombre"></div>
+                <div class="field"><label><i class="material-icons">timer</i>Duración:</label><select id="duracion"></select></div>
+                <div class="field"><label><i class="material-icons">today</i>Fecha:</label><input type="date" id="fecha"></div>
+            </div>
+            <div class="temario-box"><strong>Temario actual:</strong> <br><span id="textoTemario">Selecciona un curso...</span></div>
+            <label>Firma del Instructor:</label>
+            <canvas id="canvas-instructor" class="canvas-style"></canvas><br>
+            <button class="btn" style="background:#90a4ae; color:white; font-size:0.8em" onclick="limpiarCanvas('canvas-instructor')">Limpiar Firma</button>
+        </div>
 
-        <table id="tablaAsistencia">
-            <thead>
-                <tr>
-                    <th>No.</th>
-                    <th>Nombre</th>
-                    <th>No. De Orden</th>
-                    <th>Puesto</th>
-                    <th>Firma</th>
-                </tr>
-            </thead>
-            <tbody id="cuerpoTabla"></tbody>
-        </table>
+        <div id="qrPanel" class="qr-panel">
+            <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content: center; gap:20px;">
+                <div>
+                    <img id="imgQR" src="" style="width:160px; border: 4px solid white; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+                    <p style="font-size:11px; color:var(--azul-oscuro); font-weight:bold; margin-top:8px;">ESCANEEN PARA REGISTRO</p>
+                </div>
+                <div style="text-align:left; max-width: 250px;">
+                    <p style="margin:0; font-weight:bold; color:#2e7d32;"><i class="material-icons" style="vertical-align:middle;">sync</i> Sincronizando en vivo...</p>
+                    <p style="font-size:12px; color:#666;">Los guardias que escaneen aparecerán automáticamente en la lista de abajo.</p>
+                    <button class="btn" onclick="toggleQR(false)" style="background:#f44336; color:white; width:100%">DETENER REGISTRO QR</button>
+                </div>
+            </div>
+        </div>
 
-        <button class="btn btn-pdf" onclick="generarPDF()">
-            <span class="material-icons">picture_as_pdf</span> FINALIZAR Y GENERAR PDF FINAL
-        </button>
+        <div class="card">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:15px;">
+                <h4 style="margin:0; border:none;"><i class="material-icons">group_add</i>Participantes</h4>
+                <button class="btn btn-qr" onclick="toggleQR(true)">
+                    <i class="material-icons">qr_code_2</i> ACTIVAR MODO QR
+                </button>
+            </div>
+
+            <div id="manualInput" style="background:#f9f9f9; padding:15px; border-radius:10px; border:1px solid #eee;">
+                <div class="form-group">
+                    <div class="field" style="flex:2"><label>Nombre del Guardia:</label><input type="text" id="p_nombre" placeholder="Nombre Completo"></div>
+                    <div class="field"><label>Orden:</label><input type="text" id="p_orden" placeholder="No."></div>
+                    <div class="field"><label>Puesto:</label><input type="text" id="p_puesto" placeholder="Puesto"></div>
+                </div>
+                <label>Firma del Participante:</label>
+                <canvas id="canvas-participante" class="canvas-style"></canvas>
+                <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:10px;">
+                    <button class="btn" style="background:#90a4ae; color:white" onclick="limpiarCanvas('canvas-participante')">Borrar</button>
+                    <button class="btn btn-save" onclick="agregarManual()">+ Agregar Manualmente</button>
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                <table id="tablaRegistros">
+                    <thead><tr><th>No.</th><th>Nombre</th><th>Orden</th><th>Puesto</th><th>Firma</th><th>Acciones</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+                <p id="emptyMsg" style="text-align:center; color:#999; padding:20px;">No hay participantes en la lista.</p>
+            </div>
+        </div>
+
+        <button class="btn btn-pdf" onclick="finalizarYLimpiarTodo()"><i class="material-icons">picture_as_pdf</i> GUARDAR Y GENERAR REPORTE FINAL</button>
+    </div>
+
+    <div id="catalogo" class="tab-content">
+        <div class="card">
+            <h4><i class="material-icons">settings</i>Administrar Catálogo (Nube)</h4>
+            <label>Nombre del Curso:</label><input type="text" id="admNombre"><br><br>
+            <label>Contenido / Temario:</label><textarea id="admContenido" rows="5"></textarea><br><br>
+            <button class="btn btn-save" onclick="guardarCursoAdmin()"><i class="material-icons">cloud_upload</i> Guardar en Base de Datos</button>
+            
+            <div style="margin-top:25px;">
+                <label>Cursos Actuales:</label>
+                <div id="listaCursosAdmin" style="background:#f9f9f9; border-radius:10px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="historial" class="tab-content">
+        <div class="card">
+            <h4><i class="material-icons">folder_shared</i>Historial de Registros</h4>
+            <div id="logHistorial"></div>
+        </div>
     </div>
 </div>
 
 <script>
     const { jsPDF } = window.jspdf;
-    let firmasLocales = [];
-    // REEMPLAZA ESTA URL CON TU ID DE DESPLIEGUE DE APPS SCRIPT
-    const SCRIPT_URL = "TU_URL_DE_APPS_SCRIPT_AQUI";
 
-    function init() {
-        document.getElementById('fecha').valueAsDate = new Date();
-        setupCanvas();
-        // Revisar firmas nuevas cada 5 segundos
-        setInterval(obtenerFirmasNube, 5000);
+    // --- AQUÍ PEGA TU URL DE APPS SCRIPT (EL QUE TERMINA EN /exec) ---
+    const WEB_APP_URL = "TU_URL_AQUÍ_TERMINADO_EN_EXEC";
+
+    let registrosAsistencia = [];
+    let baseCursos = [];
+    let historialCompleto = JSON.parse(localStorage.getItem('gace_historial_v5')) || [];
+    let qrTimer;
+
+    async function init() {
+        // Llenar selector de horas
+        const selDur = document.getElementById('duracion');
+        for(let i=1; i<=24; i++) {
+            let opt = document.createElement('option'); opt.value = i + " horas"; opt.text = i + " horas"; selDur.add(opt);
+        }
+        document.getElementById('fecha').value = new Date().toISOString().split('T')[0];
+        
+        setupCanvas('canvas-instructor'); 
+        setupCanvas('canvas-participante');
+        await sincronizarCursos();
     }
 
-    function setupCanvas() {
-        const canvas = document.getElementById('pad-instructor');
-        const ctx = canvas.getContext('2d');
-        canvas.width = canvas.offsetWidth;
-        let drawing = false;
-
-        const start = (e) => { drawing = true; ctx.beginPath(); move(e); };
-        const end = () => drawing = false;
-        const move = (e) => {
-            if (!drawing) return;
-            const rect = canvas.getBoundingClientRect();
-            const x = (e.clientX || e.touches[0].clientX) - rect.left;
-            const y = (e.clientY || e.touches[0].clientY) - rect.top;
-            ctx.lineTo(x, y);
-            ctx.stroke();
-        };
-
-        canvas.addEventListener('mousedown', start);
-        canvas.addEventListener('mousemove', move);
-        window.addEventListener('mouseup', end);
-        ctx.lineWidth = 2;
+    // --- MANEJO DE QR ---
+    function toggleQR(show) {
+        const panel = document.getElementById('qrPanel');
+        const cursoIdx = document.getElementById('selectCurso').value;
+        
+        if(show) {
+            if(cursoIdx === "") return alert("Por favor, selecciona un curso antes de activar el QR.");
+            const nombreCurso = baseCursos.find(c => c.id == cursoIdx).nombre;
+            const urlFinal = `${WEB_APP_URL}?view=registro&curso=${encodeURIComponent(nombreCurso)}`;
+            document.getElementById('imgQR').src = `https://chart.googleapis.com/chart?chs=200x200&cht=qr&chl=${encodeURIComponent(urlFinal)}`;
+            panel.style.display = 'block';
+            qrTimer = setInterval(sincronizarParticipantesQR, 4000);
+            panel.scrollIntoView({behavior: "smooth"});
+        } else {
+            panel.style.display = 'none';
+            clearInterval(qrTimer);
+        }
     }
 
-    async function obtenerFirmasNube() {
+    async function sincronizarParticipantesQR() {
         try {
-            const resp = await fetch(`${SCRIPT_URL}?op=readSignatures`);
-            const data = await resp.json();
-            if (data.length !== firmasLocales.length) {
-                firmasLocales = data;
-                actualizarTabla();
+            const res = await fetch(`${WEB_APP_URL}?action=getParticipantes`);
+            const datos = await res.json();
+            if(datos.length > 0) {
+                let nuevos = false;
+                datos.forEach(row => {
+                    if(!registrosAsistencia.some(r => r.nombre === row[0].toUpperCase())) {
+                        registrosAsistencia.push({
+                            id: Date.now() + Math.random(),
+                            nombre: row[0].toUpperCase(),
+                            orden: row[1],
+                            puesto: row[2].toUpperCase(),
+                            firma: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" // Firma digital genérica
+                        });
+                        nuevos = true;
+                    }
+                });
+                if(nuevos) renderTabla();
             }
-        } catch (e) { console.log("Esperando conexión..."); }
+        } catch(e) { console.error("Error de sincronización"); }
     }
 
-    function actualizarTabla() {
-        const tbody = document.getElementById('cuerpoTabla');
-        tbody.innerHTML = firmasLocales.map((f, i) => `
+    // --- FIRMAS CANVAS ---
+    function setupCanvas(id) {
+        const cv = document.getElementById(id); const cx = cv.getContext('2d');
+        cv.width = 500; cv.height = 130;
+        let dib = false;
+        const getP = (e) => {
+            const r = cv.getBoundingClientRect();
+            const x = e.touches ? e.touches[0].clientX : e.clientX;
+            const y = e.touches ? e.touches[0].clientY : e.clientY;
+            return { x: (x - r.left) * (cv.width / r.width), y: (y - r.top) * (cv.height / r.height) };
+        };
+        cv.addEventListener('mousedown', (e) => { dib = true; cx.beginPath(); const p = getP(e); cx.moveTo(p.x, p.y); });
+        cv.addEventListener('mousemove', (e) => { if(!dib) return; const p = getP(e); cx.lineTo(p.x, p.y); cx.stroke(); });
+        window.addEventListener('mouseup', () => dib = false);
+        cv.addEventListener('touchstart', (e) => { e.preventDefault(); dib = true; cx.beginPath(); const p = getP(e); cx.moveTo(p.x, p.y); });
+        cv.addEventListener('touchmove', (e) => { e.preventDefault(); if(!dib) return; const p = getP(e); cx.lineTo(p.x, p.y); cx.stroke(); });
+        cx.lineWidth = 2.5; cx.lineCap = 'round'; cx.strokeStyle = "#000";
+    }
+
+    function limpiarCanvas(id) { document.getElementById(id).getContext('2d').clearRect(0,0,500,150); }
+
+    // --- ACCIONES DE TABLA ---
+    function agregarManual() {
+        const n = document.getElementById('p_nombre').value;
+        if(!n) return alert("El nombre es obligatorio.");
+        registrosAsistencia.push({
+            id: Date.now(),
+            nombre: n.toUpperCase(),
+            orden: document.getElementById('p_orden').value,
+            puesto: document.getElementById('p_puesto').value.toUpperCase(),
+            firma: document.getElementById('canvas-participante').toDataURL()
+        });
+        document.getElementById('p_nombre').value = ""; document.getElementById('p_orden').value = ""; document.getElementById('p_puesto').value = "";
+        limpiarCanvas('canvas-participante');
+        renderTabla();
+    }
+
+    function renderTabla() {
+        const tbody = document.querySelector('#tablaRegistros tbody');
+        const msg = document.getElementById('emptyMsg');
+        if(registrosAsistencia.length === 0) { tbody.innerHTML = ""; msg.style.display = "block"; return; }
+        
+        msg.style.display = "none";
+        tbody.innerHTML = registrosAsistencia.map((r, i) => `
             <tr>
                 <td>${i+1}</td>
-                <td>${f.nombre}</td>
-                <td>${f.orden}</td>
-                <td>${f.puesto}</td>
-                <td><img src="${f.firma}" height="30"></td>
-            </tr>
-        `).join('');
-        document.getElementById('contador').innerText = firmasLocales.length;
+                <td style="font-weight:bold">${r.nombre}</td>
+                <td>${r.orden}</td>
+                <td>${r.puesto}</td>
+                <td><img src="${r.firma}" height="28"></td>
+                <td><button class="btn" style="background:#ffcdd2; color:#c62828; padding:4px" onclick="borrarR(${r.id})"><i class="material-icons" style="font-size:18px">delete</i></button></td>
+            </tr>`).join('');
     }
 
-    function generarPDF() {
-        if (firmasLocales.length === 0) return alert("No hay participantes registrados.");
+    function borrarR(id) { 
+        if(confirm("¿Quitar de la lista?")) {
+            registrosAsistencia = registrosAsistencia.filter(r => r.id !== id); 
+            renderTabla(); 
+        }
+    }
+
+    // --- SINCRONIZACIÓN NUBE ---
+    async function sincronizarCursos() {
+        try {
+            const res = await fetch(WEB_APP_URL);
+            baseCursos = await res.json();
+            const s = document.getElementById('selectCurso');
+            s.innerHTML = '<option value="">-- Seleccione Curso --</option>' + baseCursos.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
+            document.getElementById('sync-badge').style.display = 'inline-block';
+        } catch(e) { console.error("Error cargando cursos"); }
+    }
+
+    function actualizarTemario() {
+        const c = baseCursos.find(x => x.id == document.getElementById('selectCurso').value);
+        document.getElementById('textoTemario').innerText = c ? c.contenido : "Selecciona un curso...";
+    }
+
+    async function finalizarYLimpiarTodo() {
+        if(registrosAsistencia.length === 0) return alert("La lista está vacía.");
+        if(!confirm("Esto generará el PDF y limpiará los registros de la nube. ¿Continuar?")) return;
+
+        // 1. Limpiar nube para el próximo curso
+        await fetch(WEB_APP_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({action: 'clearParticipantes'}) });
         
+        // 2. Generar Datos PDF
+        const fRaw = document.getElementById('fecha').value.split('-');
+        const fCorr = `${fRaw[2]}/${fRaw[1]}/${fRaw[0]}`;
+        const d = {
+            planta: document.getElementById('planta').value || "S/N",
+            turno: document.getElementById('turno').value,
+            fecha: fCorr,
+            instructor: document.getElementById('instructor').value || "N/A",
+            duracion: document.getElementById('duracion').value,
+            curso: baseCursos.find(x => x.id == document.getElementById('selectCurso').value),
+            participantes: JSON.parse(JSON.stringify(registrosAsistencia)),
+            firmaInstructor: document.getElementById('canvas-instructor').toDataURL()
+        };
+        
+        generarPDF(d);
+        
+        // 3. Historial
+        historialCompleto.push({ id: Date.now(), data: d });
+        localStorage.setItem('gace_historial_v5', JSON.stringify(historialCompleto));
+        
+        alert("Reporte PDF generado exitosamente.");
+        location.reload();
+    }
+
+    // --- PDF ENGINE ---
+    function generarPDF(d) {
         const doc = new jsPDF();
-        const planta = document.getElementById('planta').value;
-        const turno = document.getElementById('turno').value;
-        const fecha = document.getElementById('fecha').value;
+        
+        // Encabezado
+        doc.setFillColor(21, 101, 192); doc.rect(0, 0, 210, 20, 'F');
+        doc.setTextColor(255, 255, 255); doc.setFontSize(16); doc.text("GRUPO ÁGUILAS - GACE", 105, 13, { align: "center" });
+        
+        doc.setTextColor(0, 0, 0); doc.setFontSize(10);
+        doc.text(`PLANTA: ${d.planta.toUpperCase()}`, 15, 30);
+        doc.text(`FECHA: ${d.fecha}`, 110, 30);
+        doc.text(`CURSO: ${d.curso.nombre.toUpperCase()}`, 15, 37);
+        doc.text(`TURNO: ${d.turno.toUpperCase()}`, 110, 37);
+        doc.text(`INSTRUCTOR: ${d.instructor.toUpperCase()}`, 15, 44);
+        doc.text(`DURACIÓN: ${d.duracion}`, 110, 44);
 
-        // --- ENCABEZADO ---
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(16);
-        doc.text("GRUPO ÁGUILAS - GACE", 105, 20, { align: "center" });
-        doc.setFontSize(10);
-        doc.text("Registro de Capacitación de Personal", 105, 26, { align: "center" });
-
-        // --- DATOS SESIÓN ---
-        doc.setFontSize(10);
-        doc.text(`Planta: ${planta}`, 15, 40);
-        doc.text(`Curso: ${document.getElementById('cursoNombre').value}`, 100, 40);
-        doc.text(`Instructor: ${document.getElementById('instructor').value}`, 15, 50);
-        doc.text(`Duración: ${document.getElementById('duracion').value}`, 100, 50);
-        doc.text(`Fecha: ${fecha}`, 165, 50);
-
-        doc.text("Contenido:", 15, 60);
-        doc.setFont("helvetica", "normal");
-        const contSplit = doc.splitTextToSize(document.getElementById('contenido').value, 160);
-        doc.text(contSplit, 35, 60);
-
-        doc.setFontSize(8);
-        const aviso = "El personal de seguridad de Grupo Águilas aceptamos que fuimos capacitados y adiestrados por el equipo GACE de Grupo Águilas...";
-        doc.text(doc.splitTextToSize(aviso, 180), 15, 75);
-
-        // --- TABLA DE ASISTENCIA ---
         doc.autoTable({
-            startY: 85,
-            head: [['No.', 'Nombre', 'No. De Orden', 'Puesto', 'Firma']],
-            body: firmasLocales.map((f, i) => [i+1, f.nombre, f.orden, f.puesto, '']),
+            startY: 50,
+            head: [['No.', 'NOMBRE DEL PERSONAL', 'ORDEN', 'PUESTO', 'FIRMA']],
+            body: d.participantes.map((p, i) => [i+1, p.nombre, p.orden, p.puesto, '']),
             headStyles: { fillColor: [255, 215, 0], textColor: [0, 0, 0] },
             didDrawCell: (data) => {
                 if (data.column.index === 4 && data.cell.section === 'body') {
-                    doc.addImage(firmasLocales[data.row.index].firma, 'PNG', data.cell.x + 2, data.cell.y + 1, 15, 6);
+                    doc.addImage(d.participantes[data.row.index].firma, 'PNG', data.cell.x + 2, data.cell.y + 1, 15, 6);
                 }
             }
         });
 
-        // --- FIRMA INSTRUCTOR ---
-        const finalY = doc.lastAutoTable.finalY + 35;
-        const imgInstructor = document.getElementById('pad-instructor').toDataURL();
-        doc.addImage(imgInstructor, 'PNG', 80, finalY - 20, 50, 15);
-        doc.line(70, finalY, 140, finalY);
-        doc.text("Firma del instructor", 105, finalY + 5, { align: "center" });
-
-        // GUARDAR PDF
-        const nombreArchivo = `ROSTER_${planta.replace(/ /g, "_")}_${turno.replace(/ /g, "_")}_${fecha}.pdf`;
-        doc.save(nombreArchivo);
-
-        // --- LIMPIEZA POST-GENERACIÓN ---
-        if(confirm("¿Deseas limpiar la lista para un nuevo curso?")) {
-            fetch(`${SCRIPT_URL}?op=clearAll`).then(() => {
-                alert("Registros borrados. La página se reiniciará.");
-                location.reload();
-            });
-        }
+        const finalY = doc.lastAutoTable.finalY + 15;
+        doc.addImage(d.firmaInstructor, 'PNG', 80, finalY, 50, 15);
+        doc.line(75, finalY + 16, 135, finalY + 16);
+        doc.setFontSize(9); doc.text("FIRMA DEL INSTRUCTOR", 105, finalY + 21, { align: "center" });
+        
+        doc.save(`ROSTER_${d.planta}_${d.fecha}.pdf`);
     }
 
-    function toggleQR() {
-        const div = document.getElementById('qr-container');
-        if (div.style.display === 'block') {
-            div.style.display = 'none';
-        } else {
-            const urlRegistro = window.location.href + "?modo=registro";
-            document.getElementById('qrcode').innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(urlRegistro)}">`;
-            div.style.display = 'block';
-        }
+    // --- GESTIÓN TABS ---
+    function openTab(id) {
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        document.querySelector(`button[onclick="openTab('${id}')"]`).classList.add('active');
+        if(id === 'catalogo') renderAdminCursos();
+        if(id === 'historial') renderHistorial();
     }
 
-    function limpiarCanvas() {
-        const canvas = document.getElementById('pad-instructor');
-        canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+    function renderHistorial() {
+        const log = document.getElementById('logHistorial');
+        if(historialCompleto.length === 0) { log.innerHTML = "<p style='text-align:center;color:#999'>No hay registros guardados.</p>"; return; }
+        
+        log.innerHTML = historialCompleto.map(h => `
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:12px; border-bottom:1px solid #eee">
+                <div>
+                    <strong style="color:var(--azul-oscuro)">${h.data.planta}</strong><br>
+                    <small>${h.data.fecha} | ${h.data.participantes.length} personas</small>
+                </div>
+                <button class="btn" style="background:var(--azul-medio); color:white; scale:0.8" onclick='reDescargar(${h.id})'>Descargar</button>
+            </div>`).reverse().join('');
+    }
+
+    function reDescargar(id) {
+        const item = historialCompleto.find(x => x.id === id);
+        generarPDF(item.data);
+    }
+
+    function renderAdminCursos() {
+        document.getElementById('listaCursosAdmin').innerHTML = baseCursos.map(c => `
+            <div style="padding:12px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size:0.9em">${c.nombre}</span>
+                <button class="btn" style="background:#ffcdd2; color:#c62828; scale:0.7" onclick="borrarCurso(${c.id})">Borrar</button>
+            </div>`).join('');
+    }
+
+    async function guardarCursoAdmin() {
+        const n = document.getElementById('admNombre').value;
+        const c = document.getElementById('admContenido').value;
+        if(!n) return alert("Nombre de curso necesario");
+        
+        const datos = { id: Date.now(), nombre: n, contenido: c, action: 'save' };
+        await fetch(WEB_APP_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(datos) });
+        
+        document.getElementById('admNombre').value = "";
+        document.getElementById('admContenido').value = "";
+        alert("Curso guardado. Sincronizando...");
+        setTimeout(sincronizarCursos, 1500);
+    }
+
+    async function borrarCurso(id) {
+        if(!confirm("¿Eliminar curso de la nube?")) return;
+        await fetch(WEB_APP_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({id: id, action: 'delete'}) });
+        setTimeout(sincronizarCursos, 1000);
     }
 
     window.onload = init;
